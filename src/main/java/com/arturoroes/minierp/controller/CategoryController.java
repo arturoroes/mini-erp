@@ -1,8 +1,10 @@
 package com.arturoroes.minierp.controller;
 
-import com.arturoroes.minierp.entity.Category;
-import com.arturoroes.minierp.repository.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.arturoroes.minierp.dto.CategoryRequestDto;
+import com.arturoroes.minierp.dto.CategoryResponseDto;
+import com.arturoroes.minierp.service.CategoryService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,49 +14,38 @@ import java.util.List;
 @RequestMapping("/api/categories")
 public class CategoryController {
 
-    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
 
-    @Autowired
-    public CategoryController(CategoryRepository categoryRepository){
-        this.categoryRepository = categoryRepository;
+    public CategoryController(CategoryService categoryService) {
+        this.categoryService = categoryService;
     }
 
     @GetMapping
-    public List<Category> getAll(){
-        return categoryRepository.findAll();
+    public ResponseEntity<List<CategoryResponseDto>> getAll() {
+        return ResponseEntity.ok(categoryService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getById(@PathVariable Long id){
-        return categoryRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<CategoryResponseDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.findById(id));
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestBody Category category){
-        Category saved = categoryRepository.save(category);
-        return ResponseEntity.status(201).body(saved);
+    public ResponseEntity<CategoryResponseDto> create(@Valid @RequestBody CategoryRequestDto dto) {
+        CategoryResponseDto created = categoryService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable Long id, @RequestBody Category category){
-        return categoryRepository.findById(id)
-                .map(existing ->{
-                    existing.setName(category.getName());
-                    existing.setDescription(category.getDescription());
-                    return ResponseEntity.ok(categoryRepository.save(existing));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<CategoryResponseDto> update(
+            @PathVariable Long id,
+            @Valid @RequestBody CategoryRequestDto dto) {
+        return ResponseEntity.ok(categoryService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!categoryRepository.existsById(id)){
-            return ResponseEntity.notFound().build();
-        }
-        categoryRepository.deleteById(id);
+        categoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 }
